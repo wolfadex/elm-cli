@@ -1,21 +1,13 @@
 module Internal.Process exposing (..)
 
-import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode exposing (Value)
+import Json.Decode exposing (Decoder)
+import Json.Encode exposing (Value)
 import Task exposing (Task)
 
 
 type alias PosixProgram =
     PortIn Msg -> PortOut Msg -> Program Flags Model Msg
 
-
-{-| -}
-type alias Env =
-    { argv : List String
-    , pid : Int
-    , env : Dict String String
-    }
 
 
 type alias Flags =
@@ -56,30 +48,16 @@ type Eff
     | Done (Result String Int)
 
 
-init : PortOut Msg -> (Env -> Eff) -> Flags -> ( Model, Cmd Msg )
-init portOut makeEff flags =
-    let
-        env =
-            { argv = flags.argv
-            , pid = flags.pid
-            , env =
-                Decode.decodeValue
-                    (Decode.dict Decode.string)
-                    flags.env
-                    |> Result.withDefault Dict.empty
-            }
-
-        eff =
-            makeEff env
-    in
-    next portOut eff
+init : PortOut Msg -> Eff -> Flags -> ( Model, Cmd Msg )
+init portOut initialEff _ =
+    next portOut initialEff
 
 
 update : PortOut Msg -> Msg -> Model -> ( Model, Cmd Msg )
 update callJs msg model =
     case ( msg, model ) of
         ( GotValue value, WaitingForValue args decoder ) ->
-            case Decode.decodeValue decoder value of
+            case Json.Decode.decodeValue decoder value of
                 Ok eff ->
                     next callJs eff
 
@@ -88,7 +66,7 @@ update callJs msg model =
                     , "Return value from javascript function '"
                         ++ args.fn
                         ++ "' could not be decoded:\n"
-                        ++ Decode.errorToString err
+                        ++ Json.Decode.errorToString err
                         |> panic
                         |> callJs
                     )
@@ -118,26 +96,26 @@ next callJs eff =
             case result of
                 Ok status ->
                     ( Exited
-                    , { fn = "exit", args = [ Encode.int status ] }
+                    , { fn = "exit", args = [ Json.Encode.int status ] }
                         |> callJs
                     )
 
                 Err err ->
                     ( Exited
-                    , { fn = "panic", args = [ Encode.string err ] }
+                    , { fn = "panic", args = [ Json.Encode.string err ] }
                         |> callJs
                     )
 
 
 subscriptions : PortIn Msg -> Model -> Sub Msg
-subscriptions portIn model =
+subscriptions portIn _ =
     portIn GotValue
 
 
-makeProgram : (Env -> Eff) -> PosixProgram
-makeProgram makeEff portIn portOut =
+makeProgram : Eff -> PosixProgram
+makeProgram initialEff portIn portOut =
     Platform.worker
-        { init = init portOut makeEff
+        { init = init portOut initialEff
         , update = update portOut
         , subscriptions = subscriptions portIn
         }
@@ -147,6 +125,6 @@ panic : String -> ArgsToJs
 panic msg =
     { fn = "panic"
     , args =
-        [ Encode.string msg
+        [ Json.Encode.string msg
         ]
     }

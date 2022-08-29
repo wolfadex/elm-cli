@@ -1,6 +1,6 @@
 module Internal.Js exposing (..)
 
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode exposing (Decoder)
 
 
 type alias Error =
@@ -12,31 +12,48 @@ type alias Error =
 decodeJsResult : Decoder ok -> Decoder (Result Error ok)
 decodeJsResult =
     decodeResult
-        (Decode.map2 Error
-            (Decode.field "code" Decode.string)
-            (Decode.field "msg" Decode.string)
+        (Json.Decode.map2 Error
+            (Json.Decode.field "code" Json.Decode.string)
+            (Json.Decode.field "msg" Json.Decode.string)
         )
 
 
 decodeJsResultString : Decoder ok -> Decoder (Result String ok)
 decodeJsResultString =
-    decodeResult (Decode.field "msg" Decode.string)
+    decodeResult (Json.Decode.field "msg" Json.Decode.string)
 
 
 decodeResult : Decoder err -> Decoder ok -> Decoder (Result err ok)
 decodeResult decodeErr decodeOk =
-    Decode.field "result" Decode.string
-        |> Decode.andThen
+    Json.Decode.field "result" Json.Decode.string
+        |> Json.Decode.andThen
             (\result ->
                 case result of
                     "Ok" ->
-                        Decode.field "data" decodeOk
-                            |> Decode.map Ok
+                        Json.Decode.field "data" decodeOk
+                            |> Json.Decode.map Ok
 
                     "Err" ->
-                        Decode.field "data" decodeErr
-                            |> Decode.map Err
+                        Json.Decode.field "data" decodeErr
+                            |> Json.Decode.map Err
 
                     _ ->
-                        Decode.fail "Result must be either Ok or Err"
+                        Json.Decode.fail "Result must be either Ok or Err"
+            )
+
+decodeMaybe : Decoder just -> Decoder (Maybe just)
+decodeMaybe decodeJust =
+    Json.Decode.field "result" Json.Decode.string
+        |> Json.Decode.andThen
+            (\maybe ->
+                case maybe of
+                    "Just" ->
+                        Json.Decode.field "data" decodeJust
+                            |> Json.Decode.map Just
+
+                    "Nothing" ->
+                        Json.Decode.succeed Nothing
+
+                    _ ->
+                        Json.Decode.fail "Maybe must be either Just or Nothing"
             )

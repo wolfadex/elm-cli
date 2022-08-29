@@ -5,7 +5,7 @@ module Posix.IO exposing
     , mapError, recover
     , performTask, attemptTask
     , callJs
-    , makeProgram, Process, PortIn, PortOut
+    , makeProgram, Process, PortIn, PortOut, getEnv
     )
 
 {-|
@@ -56,6 +56,7 @@ This allows the runtime to print error message to std err in case of a problem.
 import Dict exposing (Dict)
 import Internal.ContWithResult as Cont exposing (Cont)
 import Internal.Process as Proc exposing (Eff)
+import Internal.Js
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Process
@@ -322,12 +323,22 @@ Create your own program by defining `program` in your module.
         printLn "Hello, world!"
 
 -}
-makeProgram : (Process -> IO String ()) -> Proc.PosixProgram
+makeProgram : IO String () -> Proc.PosixProgram
 makeProgram makeIO =
-    Proc.makeProgram (\env -> makeIO env handleExit)
+    Proc.makeProgram (makeIO handleExit)
 
 
 handleExit : Result String () -> Eff
 handleExit result =
     Result.map (\_ -> 0) result
         |> Proc.Done
+
+
+getEnv : String -> IO x (Maybe String)
+getEnv key =
+    Internal.Js.decodeMaybe Decode.string
+        |> callJs "getEnv" [ Encode.string key ]
+
+    --  decoder
+    --     |> IO.callJs "readFile" [ Encode.string name ]
+    --     |> IO.andThen IO.fromResult

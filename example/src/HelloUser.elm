@@ -9,14 +9,18 @@ import Posix.IO as IO exposing (IO)
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : IO.Process -> IO String ()
-program process =
-    let
-        userName =
-            Dict.get "USER" process.env
-                |> Maybe.withDefault "Unknown"
-    in
-    IO.printLn ("Hello " ++ userName)
+program : IO String ()
+program  =
+    IO.getEnv "USER"
+        |> IO.andThen
+            (\maybeUser ->
+                case maybeUser of
+                    Nothing ->
+                        IO.printLn "Hello stranger"
+
+                    Just user ->
+                        IO.printLn ("Hello " ++ user)
+            )
 
 
 
