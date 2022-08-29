@@ -202,7 +202,7 @@ function wrapElmProgram(moduleName) {
 port module Wrapper exposing (..)
 
 
-import Posix.IO as IO
+import IO
 import ${moduleName} as Cli
 
 

@@ -139,8 +139,12 @@ module.exports = {
       return encodeError(err);
     }
   },
+  // Environment functions
   getEnv: function (key) {
     return maybeFromNullable(process.env[key]);
+  },
+  getArgs: function () {
+    return process.argv.slice(5);
   },
 
   // Streams

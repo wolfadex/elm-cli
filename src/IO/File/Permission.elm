@@ -1,4 +1,4 @@
-module Posix.IO.File.Permission exposing
+module IO.File.Permission exposing
     ( Permission, readWrite, true, false
     , Mask(..), default, toMask, fromMask, fromOctal
     )

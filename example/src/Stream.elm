@@ -7,9 +7,9 @@ Read a CSV file line by line and convert each row to a JSON object.
 -}
 
 import Json.Encode as Encode
-import Posix.IO as IO exposing (IO)
-import Posix.IO.File as File
-import Posix.IO.Stream as Stream exposing (Stream)
+import IO exposing (IO)
+import IO.File as File
+import IO.Stream as Stream exposing (Stream)
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.

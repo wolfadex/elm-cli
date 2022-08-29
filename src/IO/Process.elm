@@ -1,4 +1,4 @@
-module Posix.IO.Process exposing
+module IO.Process exposing
     ( Exit, exec, execFile, failOnError
     , spawn, Process, Pid, wait, kill, Signal(..)
     )
@@ -24,7 +24,7 @@ and wait for it to exit.
 import Dict exposing (Dict)
 import Bytes exposing (Bytes)
 import Internal.Stream as Internal
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 
 
 {-| -}

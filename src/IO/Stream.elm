@@ -1,4 +1,4 @@
-module Posix.IO.Stream exposing
+module IO.Stream exposing
     ( Stream
     , stdIn, stdOut, utf8Decode, utf8Encode, line, gunzip, gzip
     , pipeTo
@@ -62,7 +62,7 @@ import Internal.Js
 import Internal.Stream as Internal
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 
 
 {-| -}

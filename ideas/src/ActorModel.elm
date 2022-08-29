@@ -76,7 +76,7 @@ Everyghing else is just here to make things more convenient.
 import Dict exposing (Dict)
 import Json.Decode exposing (Decoder)
 import Json.Encode exposing (Value)
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 
 
 

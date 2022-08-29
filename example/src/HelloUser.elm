@@ -4,14 +4,17 @@ module HelloUser exposing (..)
 
 -}
 import Dict exposing (Dict)
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
+import System.Environment
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
 program : IO String ()
 program  =
-    IO.getEnv "USER"
+    System.Environment.getArgs
+        |> IO.map (List.head >> Maybe.withDefault "USER")
+        |> IO.andThen System.Environment.getVariable
         |> IO.andThen
             (\maybeUser ->
                 case maybeUser of

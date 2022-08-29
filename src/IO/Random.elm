@@ -1,4 +1,4 @@
-module Posix.IO.Random exposing (generate, seed)
+module IO.Random exposing (generate, seed)
 
 {-| This module is a workaround for the `Random` module not supporting creating Tasks.
 
@@ -9,7 +9,7 @@ Uses NodeJs [crypto.randomBytes()](https://nodejs.org/dist/latest-v14.x/docs/api
 -}
 
 import Json.Decode as Decode
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 import Random exposing (Generator)
 
 

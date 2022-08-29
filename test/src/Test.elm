@@ -1,7 +1,7 @@
 module Test exposing (..)
 
 import Console
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 
 
 type alias Test =

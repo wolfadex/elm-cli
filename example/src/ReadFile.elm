@@ -3,8 +3,8 @@ module ReadFile exposing (..)
 {-| -}
 
 import Json.Decode exposing (Decoder)
-import Posix.IO as IO exposing (IO)
-import Posix.IO.File as File
+import IO exposing (IO)
+import IO.File as File
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.

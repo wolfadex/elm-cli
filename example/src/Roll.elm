@@ -3,8 +3,8 @@ module Roll exposing (..)
 {-| Rolls a random number.
 -}
 
-import Posix.IO as IO exposing (IO)
-import Posix.IO.Random
+import IO exposing (IO)
+import IO.Random
 import Random
 
 
@@ -17,7 +17,7 @@ program process =
             parseHighValue process.argv
                 |> Maybe.withDefault 100
     in
-    Posix.IO.Random.generate (Random.int 1 highLimit)
+    IO.Random.generate (Random.int 1 highLimit)
         |> IO.andThen
             (\randomNumber ->
                 IO.printLn (String.fromInt randomNumber ++ " (" ++ String.fromInt highLimit ++ ")")

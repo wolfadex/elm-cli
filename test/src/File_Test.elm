@@ -3,10 +3,10 @@ module File_Test exposing (..)
 {-| -}
 
 import Json.Decode as Decode
-import Posix.IO as IO exposing (IO)
-import Posix.IO.File as File
-import Posix.IO.File.Permission as Permission
-import Posix.IO.Random
+import IO exposing (IO)
+import IO.File as File
+import IO.File.Permission as Permission
+import IO.Random
 import Random
 import Test exposing (Test)
 
@@ -151,7 +151,7 @@ testWrite =
         testFile =
             "tmp/write-test.txt"
     in
-    Posix.IO.Random.generate (Random.int 1 1000000)
+    IO.Random.generate (Random.int 1 1000000)
         |> IO.andThen
             (\num ->
                 File.write

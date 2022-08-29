@@ -3,7 +3,7 @@ module RecursiveAndThen exposing (..)
 {-| Print forever
 -}
 
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.

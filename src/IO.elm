@@ -1,11 +1,11 @@
-module Posix.IO exposing
+module IO exposing
     ( IO, return, fail, none, fromResult
     , print, printLn, sleep, exit
     , map, andMap, andThen, and, combine
     , mapError, recover
     , performTask, attemptTask
     , callJs
-    , makeProgram, Process, PortIn, PortOut, getEnv
+    , makeProgram, PortIn, PortOut
     )
 
 {-|
@@ -56,7 +56,6 @@ This allows the runtime to print error message to std err in case of a problem.
 import Dict exposing (Dict)
 import Internal.ContWithResult as Cont exposing (Cont)
 import Internal.Process as Proc exposing (Eff)
-import Internal.Js
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Process
@@ -77,13 +76,6 @@ type alias PortOut msg =
 type alias IO err ok =
     Cont Eff err ok
 
-
-{-| -}
-type alias Process =
-    { argv : List String
-    , pid : Int
-    , env : Dict String String
-    }
 
 
 {-| -}
@@ -333,12 +325,3 @@ handleExit result =
     Result.map (\_ -> 0) result
         |> Proc.Done
 
-
-getEnv : String -> IO x (Maybe String)
-getEnv key =
-    Internal.Js.decodeMaybe Decode.string
-        |> callJs "getEnv" [ Encode.string key ]
-
-    --  decoder
-    --     |> IO.callJs "readFile" [ Encode.string name ]
-    --     |> IO.andThen IO.fromResult

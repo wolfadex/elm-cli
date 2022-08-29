@@ -2,8 +2,8 @@ module Sequence exposing (..)
 
 {-| A simple example to show how `combine` can be used.
 -}
-import Posix.IO as IO exposing (IO)
-import Posix.IO.Random
+import IO exposing (IO)
+import IO.Random
 import Random
 
 
@@ -23,6 +23,6 @@ program _ =
 rollFiveNumbers : IO x (List Int)
 rollFiveNumbers =
     Random.int 1 100
-        |> Posix.IO.Random.generate
+        |> IO.Random.generate
         |> List.repeat 5
         |> IO.combine

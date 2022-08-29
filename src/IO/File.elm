@@ -1,4 +1,4 @@
-module Posix.IO.File exposing
+module IO.File exposing
     ( Filename
     , read, write
     , WriteMode(..), WhenExists(..)
@@ -59,10 +59,10 @@ to learn more about Streams.
 import Bytes exposing (Bytes)
 import Internal.Js
 import Internal.Stream exposing (Stream)
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode
 import Json.Encode as Encode
-import Posix.IO as IO exposing (IO)
-import Posix.IO.File.Permission as Permission exposing (Permission)
+import IO exposing (IO)
+import IO.File.Permission as Permission exposing (Permission)
 
 
 {-| -}

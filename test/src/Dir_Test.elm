@@ -1,10 +1,10 @@
 module Dir_Test exposing (..)
 
 import List.Extra as List
-import Posix.IO as IO exposing (IO)
-import Posix.IO.Directory as Dir
-import Posix.IO.File as File
-import Posix.IO.File.Permission as Permission
+import IO exposing (IO)
+import IO.Directory as Dir
+import IO.File as File
+import IO.File.Permission as Permission
 import Test exposing (Test)
 import Time
 

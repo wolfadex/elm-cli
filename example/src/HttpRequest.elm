@@ -4,7 +4,7 @@ module HttpRequest exposing (..)
 
 -}
 
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 import Json.Decode as Decode
 import Http
 

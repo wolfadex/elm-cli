@@ -1,4 +1,4 @@
-module Posix.IO.Directory exposing
+module IO.Directory exposing
     ( Path, Entry, FileType(..)
     , stat, Stat
     , Pattern, list
@@ -39,8 +39,8 @@ file system.
 import Internal.Js
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Posix.IO as IO exposing (IO)
-import Posix.IO.File.Permission as Permission exposing (Permission)
+import IO exposing (IO)
+import IO.File.Permission as Permission exposing (Permission)
 import Time
 
 

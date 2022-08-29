@@ -3,7 +3,7 @@ module Clock exposing (..)
 {-| Prints the time on the terminal every second.
 -}
 
-import Posix.IO as IO exposing (IO)
+import IO exposing (IO)
 import Time
 
 
