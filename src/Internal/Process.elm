@@ -1,5 +1,6 @@
 module Internal.Process exposing (..)
 
+import Dict exposing (Dict)
 import Json.Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Task exposing (Task)
@@ -24,22 +25,32 @@ type alias ArgsToJs =
 
 
 type alias PortIn msg =
-    (Value -> msg) -> Sub msg
+    ({ key : Int, data : Value } -> msg) -> Sub msg
 
 
 type alias PortOut msg =
-    ArgsToJs -> Cmd msg
+    ({ key: Int, data : ArgsToJs }) -> Cmd msg
 
 
 type Model
-    = WaitingForValue ArgsToJs (Decoder Eff)
-    | WaitingForTask
+    = Running RunningModel
     | Exited
 
 
+type alias RunningModel =
+    { continues : Dict Int Continue
+    , nextId : Int
+    }
+
+
+type Continue
+    = WaitingForValue ArgsToJs (Decoder Eff)
+    | WaitingForTask
+
+
 type Msg
-    = GotValue Value
-    | GotNext Eff
+    = GotValue { key : Int, data : Value }
+    | GotNext { key : Int, data : Eff }
 
 
 type Eff
@@ -50,60 +61,121 @@ type Eff
 
 init : PortOut Msg -> Eff -> Flags -> ( Model, Cmd Msg )
 init portOut initialEff _ =
-    next portOut initialEff
+    next { nextId = 0, continues = Dict.empty} portOut initialEff
 
 
 update : PortOut Msg -> Msg -> Model -> ( Model, Cmd Msg )
 update callJs msg model =
     case ( msg, model ) of
-        ( GotValue value, WaitingForValue args decoder ) ->
-            case Json.Decode.decodeValue decoder value of
-                Ok eff ->
-                    next callJs eff
+        ( GotValue { key, data }, Running running ) ->
+            case Dict.get key running.continues of
+                Just (WaitingForValue args decoder) ->
+                    case Json.Decode.decodeValue decoder data of
+                        Ok eff ->
+                            next running callJs eff
 
-                Err err ->
+                        Err err ->
+                            ( Exited
+                            , callJs
+                                { key = -1
+                                , data =
+                                    "Return value from javascript function '"
+                                        ++ args.fn
+                                        ++ "' could not be decoded:\n"
+                                        ++ Json.Decode.errorToString err
+                                        |> panic
+                                }
+                            )
+
+                Just WaitingForTask ->
                     ( Exited
-                    , "Return value from javascript function '"
-                        ++ args.fn
-                        ++ "' could not be decoded:\n"
-                        ++ Json.Decode.errorToString err
-                        |> panic
-                        |> callJs
+                    , callJs
+                        { key = -1
+                        , data = panic "This should never happen"
+                        }
                     )
 
-        ( GotNext eff, WaitingForTask ) ->
-            next callJs eff
+                Nothing ->
+                    ( Exited
+                    , callJs
+                        { key = -1
+                        , data = panic "This should never happen"
+                        }
+                    )
+
+        ( GotNext { key, data }, Running running ) ->
+            case Dict.get key running.continues of
+                Just WaitingForTask ->
+                    next running callJs data
+
+                Just (WaitingForValue _ _) ->
+                    ( Exited
+                    , callJs
+                        { key = -1
+                        , data = panic "This should never happen"
+                        }
+                    )
+
+                Nothing ->
+                    ( Exited
+                    , callJs
+                        { key = -1
+                        , data = panic "This should never happen"
+                        }
+                    )
 
         _ ->
             ( Exited
-            , panic "This should never happen"
-                |> callJs
+            , callJs
+                { key = -1
+                , data = panic "This should never happen"
+                }
             )
 
 
-next : PortOut Msg -> Eff -> ( Model, Cmd Msg )
-next callJs eff =
+next : RunningModel -> PortOut Msg -> Eff -> ( Model, Cmd Msg )
+next runningModel callJs eff =
     case eff of
         CallJs args decoder ->
-            ( WaitingForValue args decoder, callJs args )
+            ( Running
+                { runningModel
+                    | continues =
+                        Dict.insert runningModel.nextId
+                            (WaitingForValue args decoder)
+                            runningModel.continues
+                    , nextId = runningModel.nextId + 1
+                }
+            , callJs { key = runningModel.nextId, data = args }
+            )
 
         PerformTask task ->
-            ( WaitingForTask
-            , Task.perform GotNext task
+            ( Running
+                { runningModel
+                    | continues =
+                        Dict.insert runningModel.nextId
+                            WaitingForTask
+                            runningModel.continues
+                    , nextId = runningModel.nextId + 1
+                }
+            , Task.perform (\data -> GotNext { key = runningModel.nextId, data = data }) task
             )
 
         Done result ->
             case result of
                 Ok status ->
                     ( Exited
-                    , { fn = "exit", args = [ Json.Encode.int status ] }
-                        |> callJs
+                    , callJs
+                        { key = -1
+                        , data = { fn = "exit", args = [ Json.Encode.int status ] }
+                        }
                     )
 
                 Err err ->
                     ( Exited
-                    , { fn = "panic", args = [ Json.Encode.string err ] }
-                        |> callJs
+                    , callJs
+                        { key = -1
+                        , data = { fn = "panic", args = [ Json.Encode.string err ] }
+                        }
                     )
 
 

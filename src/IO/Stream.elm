@@ -60,7 +60,7 @@ as variations of `List.foldl` but for streams.
 import Bytes exposing (Bytes)
 import Internal.Js
 import Internal.Stream as Internal
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode
 import Json.Encode as Encode
 import IO exposing (IO)
 
@@ -116,7 +116,7 @@ utf8Decode =
           }
         ]
         Internal.encodeBytes
-        Decode.string
+        Json.Decode.string
 
 
 {-| Convert an utf8 string to bytes.
@@ -149,7 +149,7 @@ line =
           }
         ]
         Encode.string
-        Decode.string
+        Json.Decode.string
 
 
 
@@ -178,7 +178,7 @@ read (Internal.Stream pipe _ decoder) =
     IO.callJs "readStream"
         [ Encode.list Internal.encodePipe pipe
         ]
-        (Internal.Js.decodeJsResultString (Decode.nullable decoder))
+        (Internal.Js.decodeJsResultString (Json.Decode.nullable decoder))
         |> IO.andThen IO.fromResult
 
 
@@ -234,7 +234,7 @@ write input (Internal.Stream pipes encode _) =
         [ Encode.list Internal.encodePipe pipes
         , encode input
         ]
-        (Internal.Js.decodeJsResultString (Decode.succeed ()))
+        (Internal.Js.decodeJsResultString (Json.Decode.succeed ()))
         |> IO.andThen IO.fromResult
 
 
@@ -245,7 +245,7 @@ read_ (Internal.Stream pipe _ decoder) =
     IO.callJs "readStream"
         [ Encode.list Internal.encodePipe pipe
         ]
-        (Internal.Js.decodeJsResult (Decode.nullable decoder))
+        (Internal.Js.decodeJsResult (Json.Decode.nullable decoder))
         |> IO.andThen IO.fromResult
         |> IO.mapError
             (\err ->
@@ -279,7 +279,7 @@ write_ input (Internal.Stream pipes encode _) =
         [ Encode.list Internal.encodePipe pipes
         , encode input
         ]
-        (Internal.Js.decodeJsResult (Decode.succeed ()))
+        (Internal.Js.decodeJsResult (Json.Decode.succeed ()))
         |> IO.andThen IO.fromResult
         |> IO.mapError
             (\err ->

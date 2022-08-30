@@ -48,37 +48,37 @@ function maybeFromNullable(v) {
 }
 
 module.exports = {
-  readFile: function (name) {
+  readFile: function (cb, name) {
     try {
       const content = fs.readFileSync(name).toString();
-      return Ok(content);
+      cb(Ok(content));
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
   },
-  writeFile: function (name, content, options) {
+  writeFile: function (cb, name, content, options) {
     try {
       fs.writeFileSync(name, content, options);
-      return Ok(null);
+      cb(Ok(null));
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
   },
-  fopen: function (filename, flags) {
+  fopen: function (cb, filename, flags) {
     try {
-      return fs.openSync(filename, flags);
+      cb(fs.openSync(filename, flags));
     } catch (e) {
-      return e.toString();
+      cb(e.toString());
     }
   },
-  fstat: function (filename) {
+  fstat: function (cb, filename) {
     try {
-      return fs.statSync(filename);
+      cb(fs.statSync(filename));
     } catch (e) {
-      return e.toString();
+      cb(e.toString());
     }
   },
-  readdir: function (dirname) {
+  readdir: function (cb, dirname) {
     try {
       var r = fs
         .readdirSync(dirname, { withFileTypes: true })
@@ -92,38 +92,39 @@ module.exports = {
           isBlockDevice: dirent.isBlockDevice(),
           isCharacterDevice: dirent.isCharacterDevice(),
         }));
-      return r;
+      cb(r);
     } catch (e) {
-      return e.toString();
+      cb(e.toString());
     }
   },
-  randomSeed: function () {
-    return crypto.randomBytes(4).readInt32LE();
+  randomSeed: function (cb) {
+    cb(crypto.randomBytes(4).readInt32LE());
   },
-  print: function (str) {
+  print: function (cb, str) {
     fs.writeFileSync(1, str);
+    cb();
   },
-  panic: function (msg) {
+  panic: function (cb, msg) {
     console.error(msg);
     process.exit(255);
   },
-  exit: function (status) {
+  exit: function (cb, status) {
     process.exit(status);
   },
 
   // DIRECTORY
 
-  stat: function (path) {
+  stat: function (cb, path) {
     try {
       let stat = fs.statSync(path);
       stat.absolutePath = fs.realpathSync(path);
       setFileType(stat);
-      return Ok(stat);
+      cb(Ok(stat));
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
   },
-  listDir: function (path) {
+  listDir: function (cb, path) {
     try {
       let dirPath = fs.realpathSync(path);
       let entries = fs.readdirSync(path, {
@@ -134,48 +135,48 @@ module.exports = {
         setFileType(ent);
         ent.absolutePath = dirPath + "/" + ent.name;
       });
-      return Ok(entries);
+      cb(Ok(entries));
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
   },
   // Environment functions
-  getEnv: function (key) {
-    return maybeFromNullable(process.env[key]);
+  getEnv: function (cb, key) {
+    cb(maybeFromNullable(process.env[key]));
   },
-  getArgs: function () {
-    return process.argv.slice(5);
+  getArgs: function (cb) {
+    cb(process.argv.slice(5));
   },
 
   // Streams
 
-  openReadStream: function (filename, bufferSize) {
+  openReadStream: function (cb, filename, bufferSize) {
     var key = "read-" + ++lastKey;
 
     try {
       var file = fs.openSync(filename);
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
 
     streams[key] = (it) => readGenerator(file, bufferSize);
 
-    return Ok({ id: key });
+    cb(Ok({ id: key }));
   },
-  openWriteStream: function (filename, options) {
+  openWriteStream: function (cb, filename, options) {
     var key = "write-" + ++lastKey;
 
     try {
       var file = fs.openSync(filename, options.flag, options.mode);
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
 
     streams[key] = (it) => writeGenerator(file, it);
 
-    return Ok({ id: key });
+    cb(Ok({ id: key }));
   },
-  readStream: function (pipes) {
+  readStream: function (cb, pipes) {
     const key = piplineKey(pipes);
 
     let iterator = streams[key];
@@ -190,26 +191,53 @@ module.exports = {
     try {
       val = iterator.next().value;
     } catch (err) {
-      return encodeError(err);
+      cb(encodeError(err));
     }
 
     if (val == undefined) {
-      return Ok(null);
+      cb(Ok(null));
     } else if (val instanceof Buffer) {
-      return Ok([...val.values()]);
+      cb(Ok([...val.values()]));
     }
 
-    return Ok(val);
+    cb(Ok(val));
   },
-  writeStream: function (pipes, data) {
+  writeStream: function (cb, pipes, data) {
     if (Array.isArray(data)) {
       data = Buffer.from(data);
     }
     let iterator = createPipeline(pipes, valueToIterator(data));
     let bytesWritten = iterator.next().value;
 
-    return Ok(bytesWritten);
+    cb(Ok(bytesWritten));
   },
+
+  // Net
+  "http:createServer": function (cb, options) {
+    var key = "http-server" + ++lastKey;
+    try {
+      var http = require("node:http");
+      var server = http.createServer(function (request, response) {
+        cb(Ok({ request, response }));
+      });
+      server.listen(options.port, options.host, function () {});
+    } catch (err) {
+      return encodeError(err);
+    }
+  },
+  // openReadStream: function (filename, bufferSize) {
+  //   var key = "read-" + ++lastKey;
+
+  //   try {
+  //     var file = fs.openSync(filename);
+  //   } catch (err) {
+  //     return encodeError(err);
+  //   }
+
+  //   streams[key] = (it) => readGenerator(file, bufferSize);
+
+  //   return Ok({ id: key });
+  // },
 };
 
 function setFileType(stat) {
@@ -402,4 +430,8 @@ function* writeGenerator(fd, iterator) {
 
 function* valueToIterator(data) {
   yield data;
+}
+
+function* serverHandlerGenerator(request, response) {
+  //
 }

@@ -40,20 +40,25 @@ function start(elmApp, flags) {
   });
   const app = elmApp.init({ flags: flags });
 
-  app.ports.send.subscribe(function (msg) {
-    const fn = stdIo[msg.fn];
+  app.ports.send.subscribe(function ({ key, data }) {
+    const fn = stdIo[data.fn];
 
     if (!fn) {
-      printBugReport(`IO Function "${msg.fn}" not implemented.`);
+      printBugReport(`IO Function "${data.fn}" not implemented.`);
       process.exit(255);
     }
-    var result = fn.apply(null, msg.args);
-
-    if (result instanceof Promise) {
-      result.then(app.ports.recv.send).catch(app.ports.recv.send);
-    } else {
-      app.ports.recv.send(result);
-    }
+    fn.apply(null, [
+      function (result) {
+        if (result instanceof Promise) {
+          result
+            .then((res) => app.ports.recv.send({ key, data: res }))
+            .catch((err) => app.ports.recv.send({ key, data: err }));
+        } else {
+          app.ports.recv.send({ key, data: result });
+        }
+      },
+      ...data.args,
+    ]);
   });
 }
 
@@ -259,23 +264,26 @@ const flags = {
 }
 const app = elmApp.init({ flags: flags });
 
-app.ports.send.subscribe(function(msg) {
-    const fn = stdIo[msg.fn];
+app.ports.send.subscribe(function({ key, data }) {
+    const fn = stdIo[data.fn];
 
     if (!fn) {
-        console.error(\`Function "\${msg.fn}" does not exists in javascript.\`);
+        console.error(\`Function "\${data.fn}" does not exists in javascript.\`);
         process.exit(255);
     }
 
-    var result = fn.apply(null, msg.args);
-
-    if (result instanceof Promise) {
-        result
-            .then(app.ports.recv.send)
-            .catch(app.ports.recv.send);
-    } else {
-        app.ports.recv.send(result);
-    }
+    fn.apply(null, [
+      function (result) {
+        if (result instanceof Promise) {
+          result
+            .then((res) => app.ports.recv.send({ key, data: res }))
+            .catch((err) => app.ports.recv.send({ key, data: err }));
+        } else {
+          app.ports.recv.send({ key, data: result });
+        }
+      },
+      ...data.args,
+    ]);
 });
 
 `;
