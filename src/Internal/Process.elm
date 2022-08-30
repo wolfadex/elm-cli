@@ -6,6 +6,7 @@ import Json.Encode exposing (Value)
 import Task exposing (Task)
 
 
+
 type alias PosixProgram =
     PortIn Msg -> PortOut Msg -> Program Flags Model Msg
 
@@ -38,9 +39,7 @@ type Model
 
 
 type alias RunningModel =
-    { continues : Dict Int Continue
-    , nextId : Int
-    }
+    Dict Int Continue
 
 
 type Continue
@@ -50,7 +49,7 @@ type Continue
 
 type Msg
     = GotValue { key : Int, data : Value }
-    | GotNext { key : Int, data : Eff }
+    | GotNext Int Eff
 
 
 type Eff
@@ -61,18 +60,18 @@ type Eff
 
 init : PortOut Msg -> Eff -> Flags -> ( Model, Cmd Msg )
 init portOut initialEff _ =
-    next { nextId = 0, continues = Dict.empty} portOut initialEff
+    next 0 Dict.empty portOut initialEff
 
 
 update : PortOut Msg -> Msg -> Model -> ( Model, Cmd Msg )
 update callJs msg model =
     case ( msg, model ) of
-        ( GotValue { key, data }, Running running ) ->
-            case Dict.get key running.continues of
+        ( GotValue { key, data }, Running continues ) ->
+            case Dict.get key continues of
                 Just (WaitingForValue args decoder) ->
                     case Json.Decode.decodeValue decoder data of
                         Ok eff ->
-                            next running callJs eff
+                            next key continues callJs eff
 
                         Err err ->
                             ( Exited
@@ -103,10 +102,10 @@ update callJs msg model =
                         }
                     )
 
-        ( GotNext { key, data }, Running running ) ->
-            case Dict.get key running.continues of
+        ( GotNext key data, Running continues ) ->
+            case Dict.get key continues of
                 Just WaitingForTask ->
-                    next running callJs data
+                    next key continues callJs data
 
                 Just (WaitingForValue _ _) ->
                     ( Exited
@@ -133,31 +132,17 @@ update callJs msg model =
             )
 
 
-next : RunningModel -> PortOut Msg -> Eff -> ( Model, Cmd Msg )
-next runningModel callJs eff =
+next : Int -> RunningModel -> PortOut Msg -> Eff -> ( Model, Cmd Msg )
+next key continues callJs eff =
     case eff of
         CallJs args decoder ->
-            ( Running
-                { runningModel
-                    | continues =
-                        Dict.insert runningModel.nextId
-                            (WaitingForValue args decoder)
-                            runningModel.continues
-                    , nextId = runningModel.nextId + 1
-                }
-            , callJs { key = runningModel.nextId, data = args }
+            ( Running (Dict.insert (key + 1) (WaitingForValue args decoder) continues)
+            , callJs { key = key + 1, data = args }
             )
 
         PerformTask task ->
-            ( Running
-                { runningModel
-                    | continues =
-                        Dict.insert runningModel.nextId
-                            WaitingForTask
-                            runningModel.continues
-                    , nextId = runningModel.nextId + 1
-                }
-            , Task.perform (\data -> GotNext { key = runningModel.nextId, data = data }) task
+            ( Running (Dict.insert (key + 1) WaitingForTask continues)
+            , Task.perform (GotNext (key + 1)) task
             )
 
         Done result ->

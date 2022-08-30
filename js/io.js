@@ -214,7 +214,6 @@ module.exports = {
 
   // Net
   "http:createServer": function (cb, options) {
-    var key = "http-server" + ++lastKey;
     try {
       var http = require("node:http");
       var server = http.createServer(function (request, response) {
@@ -225,6 +224,15 @@ module.exports = {
       return encodeError(err);
     }
   },
+  "http:respond": function (cb, { response }, statusCode, content) {
+    response.writeHead(statusCode);
+    response.end(content);
+    cb();
+  },
+  "http:getpath": function (cb, { request }) {
+    cb(request.url);
+  },
+  forever: function () {},
   // openReadStream: function (filename, bufferSize) {
   //   var key = "read-" + ++lastKey;
 

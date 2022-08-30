@@ -1,6 +1,6 @@
 module IO exposing
     ( IO, return, fail, none, fromResult
-    , print, printLn, sleep, exit
+    , print, printLn, sleep, exit, forever
     , map, andMap, andThen, and, combine
     , mapError, recover
     , performTask, attemptTask
@@ -55,11 +55,13 @@ This allows the runtime to print error message to std err in case of a problem.
 
 import Dict exposing (Dict)
 import Internal.ContWithResult as Cont exposing (Cont)
+import Internal.Cont
 import Internal.Process as Proc exposing (Eff)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Process
 import Task exposing (Task)
+import Internal.Cont exposing (andThen)
 
 
 {-| -}
@@ -128,6 +130,11 @@ sleep : Float -> IO x ()
 sleep delay =
     Process.sleep delay
         |> performTask
+
+forever : IO x ()
+forever =
+    callJs "forever" [] (Decode.succeed ())
+        |> andThen (\_ -> forever)
 
 
 {-| Perform a task

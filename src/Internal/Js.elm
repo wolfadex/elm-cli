@@ -9,6 +9,11 @@ type alias Error =
     }
 
 
+prettyError : Error -> String
+prettyError err =
+    "Error Code: " ++ err.code ++ ", " ++ err.msg
+
+
 decodeJsResult : Decoder ok -> Decoder (Result Error ok)
 decodeJsResult =
     decodeResult
