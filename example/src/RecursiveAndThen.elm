@@ -8,8 +8,8 @@ import IO exposing (IO)
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : IO.Process -> IO String ()
-program process =
+program : IO String ()
+program =
     IO.printLn "Repeat I/O 5000 times to check that stack does not blow up."
         |> IO.and
             (IO.print "."

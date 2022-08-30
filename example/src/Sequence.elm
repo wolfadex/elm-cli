@@ -9,8 +9,8 @@ import Random
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : a -> IO String ()
-program _ =
+program : IO String ()
+program =
     IO.print "Roll 5 random numbers: "
         |> IO.and rollFiveNumbers
         |> IO.map

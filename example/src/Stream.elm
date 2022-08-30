@@ -14,8 +14,8 @@ import IO.Stream as Stream exposing (Stream)
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : IO.Process -> IO String ()
-program process =
+program : IO String ()
+program =
     File.openReadStream { bufferSize = 10 } "test.csv"
         |> IO.andThen
             (\testCsvStream ->
