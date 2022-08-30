@@ -9,8 +9,8 @@ import Time
 
 {-| This is the entry point, you can think of it as `main` in normal Elm applications.
 -}
-program : a -> IO String ()
-program _ =
+program : IO String ()
+program =
     IO.printLn "Will print the current time 3 times and then exit."
         |> IO.and (IO.performTask Time.here)
         |> IO.andThen (\zone -> printTime zone 3)
